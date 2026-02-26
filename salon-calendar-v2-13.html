@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salon Calendar</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400&family=Josefin+Sans:wght@100;200;300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #faf7f2;
+    --warm-white: #fff9f4;
+    --blush: #e8c4b0;
+    --rose: #c9856a;
+    --deep: #2c1f1a;
+    --mid: #6b4c42;
+    --light: #a07060;
+    --border: #e4d5cc;
+    --shadow: rgba(44,31,26,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--deep);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--deep);
+    color: var(--cream);
+    padding: 18px 20px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px var(--shadow);
+  }
+
+  header h1 {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 200;
+    letter-spacing: 0.35em;
+    color: var(--blush);
+    text-transform: uppercase;
+  }
+
+  header p {
+    font-size: 0.75rem;
+    color: var(--light);
+    margin-top: 2px;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .sync-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 20px;
+    background: var(--deep);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.7rem;
+    color: var(--light);
+    letter-spacing: 0.05em;
+  }
+
+  .sync-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #888;
+    transition: background 0.3s;
+    flex-shrink: 0;
+  }
+
+  .sync-dot.synced { background: #7dba84; }
+  .sync-dot.syncing { background: var(--blush); animation: pulse 1s infinite; }
+  .sync-dot.error { background: #e07070; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 14px 20px;
+    background: var(--warm-white);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .week-nav button {
+    background: var(--deep);
+    color: var(--cream);
+    border: none;
+    border-radius: 50%;
+    width: 34px; height: 34px;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+
+  .week-nav button:hover { background: var(--rose); }
+
+  .week-label {
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 200;
+    letter-spacing: 0.15em;
+    font-size: 1rem;
+    color: var(--deep);
+    min-width: 180px;
+    text-align: center;
+  }
+
+  .today-btn {
+    background: var(--blush) !important;
+    color: var(--deep) !important;
+    border-radius: 20px !important;
+    width: auto !important;
+    padding: 0 14px !important;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem !important;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px;
+    justify-content: center;
+    max-width: 1100px;
+    margin: 0 auto 8px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    color: var(--mid);
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+  }
+
+  .legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .calendar-wrapper {
+    display: flex;
+    padding: 0 0 24px;
+    overflow: hidden;
+  }
+
+  .time-sidebar {
+    flex-shrink: 0;
+    width: 64px;
+    background: var(--cream);
+    border-right: 1px solid var(--border);
+    z-index: 10;
+    padding-top: 0;
+  }
+
+  .time-sidebar-header {
+    height: 53px;
+    background: var(--deep);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .days-scroll {
+    overflow-x: auto;
+    flex: 1;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* The calendar uses a CSS grid where each row = 1 slot (15min).
+     Booking blocks are absolutely positioned inside day columns. */
+  .calendar-outer {
+    max-width: 1100px;
+    margin: 0 auto;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 4px 24px var(--shadow);
+  }
+
+  /* Header row */
+  .cal-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--deep);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    min-width: 490px;
+  }
+
+  .cal-header-cell {
+    text-align: center;
+    padding: 10px 4px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--blush);
+    border-right: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .cal-header-cell.today-col { background: var(--rose); color: white; }
+
+  .cal-header-cell .date-num {
+    display: block;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 200;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+    color: var(--cream);
+  }
+
+  .cal-header-cell.today-col .date-num { color: white; }
+
+  /* Body: time labels + day columns side by side */
+  .cal-body {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+  }
+
+  /* Time label column */
+  .time-col-old { display: none; }
+
+  .time-cell {
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 6px;
+    font-size: 0.63rem;
+    color: var(--light);
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Day columns */
+  .day-col {
+    position: relative;
+    border-right: 1px solid var(--border);
+  }
+
+  .day-col.today-col { background: #fff8f5; }
+
+  /* Slot grid lines (background) */
+  .slot-line {
+    height: 36px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .slot-line:hover { background: rgba(201,133,106,0.06); }
+
+  /* Booking block — absolutely positioned */
+  .booking-block {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    background: linear-gradient(135deg, #f5e0d6, #fdf0eb);
+    border-left: 3px solid var(--rose);
+    border-radius: 6px;
+    padding: 4px 6px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(201,133,106,0.2);
+    transition: box-shadow 0.15s, transform 0.1s;
+    z-index: 2;
+  }
+
+  .booking-block:hover {
+    box-shadow: 0 4px 12px rgba(201,133,106,0.35);
+    transform: translateX(1px);
+  }
+
+  .booking-block .client-name {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--deep);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+  }
+
+  .booking-block .service-name {
+    font-size: 0.65rem;
+    color: var(--rose);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+  }
+
+  .booking-block .duration-label {
+    font-size: 0.58rem;
+    color: var(--light);
+    margin-top: 1px;
+  }
+
+  .booking-block .block-clear {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 15px; height: 15px;
+    background: var(--rose);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 0.6rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .booking-block:hover .block-clear { opacity: 1; }
+
+  /* Booking modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(44,31,26,0.55);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--warm-white);
+    border-radius: 16px;
+    padding: 28px 24px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  }
+
+  .modal h2 {
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 200;
+    letter-spacing: 0.15em;
+    font-size: 1.2rem;
+    color: var(--deep);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  .modal .slot-info {
+    font-size: 0.78rem;
+    color: var(--light);
+    margin-bottom: 18px;
+  }
+
+  .modal label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--mid);
+    margin-bottom: 5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .modal input, .modal select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    color: var(--deep);
+    background: white;
+    margin-bottom: 14px;
+    outline: none;
+    transition: border 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .modal input:focus, .modal select:focus { border-color: var(--rose); }
+
+  .modal-btns {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  .modal-btns button {
+    flex: 1;
+    padding: 11px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-save {
+    background: var(--deep);
+    color: var(--cream);
+  }
+
+  .btn-save:hover { background: var(--rose); }
+
+  .btn-cancel {
+    background: var(--border);
+    color: var(--mid);
+  }
+
+  .btn-cancel:hover { background: #d5c0b5; }
+
+  @media (max-width: 600px) {
+    header h1 { font-size: 1.2rem; }
+    .week-label { font-size: 0.85rem; min-width: 140px; }
+    .cal-body, .cal-header { grid-template-columns: 52px repeat(7, minmax(90px,1fr)); }
+    .calendar-outer { min-width: 700px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Booking Modal -->
+<div class="modal-overlay" id="bookingModal">
+  <div class="modal">
+    <h2 id="modalTitle">New Booking</h2>
+    <p class="slot-info" id="modalSlotInfo"></p>
+    <label>Client Name</label>
+    <input type="text" id="clientNameInput" placeholder="e.g. Sarah Murphy" autocomplete="off" />
+    <label>Category</label>
+    <select id="categorySelect" onchange="onCategoryChange()">
+      <option value="">— Select a category —</option>
+    </select>
+    <label>Treatment</label>
+    <select id="serviceSelect" disabled>
+      <option value="">— Select a category first —</option>
+    </select>
+    <input type="text" id="otherTreatmentInput" placeholder="Describe the treatment..." autocomplete="off" style="display:none;" />
+    <div id="serviceInfo" style="font-size:0.75rem;color:var(--light);margin:-8px 0 12px;min-height:18px;"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveBooking()">Save Booking</button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <h1>CARAUN</h1>
+  <p>Appointment Calendar</p>
+</header>
+
+<div class="sync-status">
+  <div class="sync-dot" id="syncDot"></div>
+  <span id="syncText">Connecting...</span>
+</div>
+
+<div class="week-nav">
+  <button onclick="changeWeek(-1)">&#8592;</button>
+  <span class="week-label" id="weekLabel"></span>
+  <button onclick="changeWeek(1)">&#8594;</button>
+  <button class="today-btn" onclick="goToToday()">Today</button>
+</div>
+
+<div style="max-width:1116px;margin:0 auto;">
+  <div class="legend" id="legend"></div>
+</div>
+
+<div class="calendar-wrapper">
+  <div class="time-sidebar">
+    <div class="time-sidebar-header"></div>
+    <div id="timeSidebar"></div>
+  </div>
+  <div class="days-scroll">
+    <div class="calendar-outer" id="calendarOuter"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SERVICES — categorised
+// ============================================================
+const CATEGORIES = [
+  {
+    name: "Eyebrows",
+    color: "#b5834a",
+    services: [
+      { name: "Eyebrow Tint",                       duration: 10,  price: 12  },
+      { name: "Eyebrow Shape (Wax or Thread)",       duration: 10,  price: 15  },
+      { name: "Eyebrow Tint + Shape",                duration: 20,  price: 25  },
+      { name: "Eyebrow Lamination",                  duration: 50,  price: 50  },
+      { name: "Natural Henna or Hybrid Eyebrows",    duration: 30,  price: 35  },
+    ]
+  },
+  {
+    name: "Eyelashes",
+    color: "#c96a8a",
+    services: [
+      { name: "Lash Tint",                           duration: 10,  price: 12  },
+      { name: "Lash Lift",                           duration: 60,  price: 55  },
+      { name: "Classic Lash Extensions",             duration: 70,  price: 55  },
+      { name: "Hybrid Lash Extensions",              duration: 90,  price: 65  },
+      { name: "Russian Volume Lash Extensions",      duration: 120, price: 75  },
+      { name: "3 Week Refill",                       duration: 60,  price: 35  },
+      { name: "Individual Lash Application",         duration: 10,  price: 20  },
+      { name: "Strip Lash Application",              duration: 10,  price: 15  },
+    ]
+  },
+  {
+    name: "Face Hair Removal",
+    color: "#c9856a",
+    services: [
+      { name: "Lip Wax/Thread",                      duration: 10,  price: 12  },
+      { name: "Chin Wax/Thread",                     duration: 10,  price: 12  },
+      { name: "Brow Wax/Thread",                     duration: 10,  price: 12  },
+      { name: "Sides Wax/Thread",                    duration: 10,  price: 15  },
+      { name: "Full Face Wax/Thread",                duration: 30,  price: 35  },
+      { name: "Nostrils Wax/Thread",                 duration: 10,  price: 15  },
+      { name: "Dermaplaning",                        duration: 30,  price: 35  },
+    ]
+  },
+  {
+    name: "Body Hair Removal",
+    color: "#8a6bbf",
+    services: [
+      { name: "Full Legs Wax",                       duration: 45,  price: 35  },
+      { name: "Half Legs Wax",                       duration: 30,  price: 25  },
+      { name: "Arms Wax",                            duration: 30,  price: 25  },
+      { name: "Underarms Wax",                       duration: 15,  price: 15  },
+      { name: "Bikini Wax",                          duration: 15,  price: 20  },
+      { name: "Deep Bikini Wax",                     duration: 30,  price: 35  },
+      { name: "Belly Wax",                           duration: 15,  price: 15  },
+      { name: "Back Wax",                            duration: 40,  price: 30  },
+      { name: "Chest Wax",                           duration: 20,  price: 20  },
+    ]
+  },
+  {
+    name: "Makeup",
+    color: "#e0885a",
+    services: [
+      { name: "Makeup + Lashes Application",         duration: 50,  price: 50  },
+      { name: "Makeup (No Lashes)",                  duration: 40,  price: 45  },
+      { name: "Eye Makeup",                          duration: 20,  price: 25  },
+      { name: "Bridal Makeup",                       duration: 60,  price: 55  },
+      { name: "Festival Makeup",                     duration: 60,  price: 55  },
+    ]
+  },
+  {
+    name: "Hair",
+    color: "#5b9ea0",
+    services: [
+      { name: "Upstyle",                             duration: 50,  price: 45  },
+      { name: "Half Up Half Down",                   duration: 40,  price: 35  },
+      { name: "GHD Curls",                           duration: 30,  price: 30  },
+      { name: "Hairstyle Short Hair",                duration: 30,  price: 25  },
+      { name: "Plaits",                              duration: 20,  price: 20  },
+    ]
+  },
+  {
+    name: "Nails",
+    color: "#7dba84",
+    services: [
+      { name: "Manicure with Regular Polish",        duration: 30,  price: 25  },
+      { name: "Shellac",                             duration: 30,  price: 30  },
+      { name: "BIAB Overlay",                        duration: 60,  price: 40  },
+      { name: "BIAB Extensions",                     duration: 70,  price: 45  },
+      { name: "BIAB Overlay Refill",                 duration: 60,  price: 35  },
+      { name: "Shellac Toes",                        duration: 30,  price: 30  },
+      { name: "Pedicure with Shellac",               duration: 60,  price: 50  },
+      { name: "Pedicure with Normal Polish",         duration: 50,  price: 40  },
+      { name: "Shellac Removal",                     duration: 10,  price: 5   },
+      { name: "BIAB or Gel Removal",                 duration: 15,  price: 15  },
+      { name: "Nail Art / Chrome / French Tip",      duration: 10,  price: 5   },
+    ]
+  },
+  {
+    name: "Massages",
+    color: "#6b9abf",
+    services: [
+      { name: "Indian Head Massage",                 duration: 30,  price: 30  },
+      { name: "Back, Neck & Shoulders",              duration: 35,  price: 35  },
+      { name: "Back, Neck & Shoulders + Chest/Face", duration: 50,  price: 50  },
+      { name: "Full Body Massage",                   duration: 70,  price: 70  },
+      { name: "Grounding Holistic Massage",          duration: 60,  price: 60  },
+      { name: "Lymphatic Drainage Full Body",        duration: 70,  price: 70  },
+      { name: "Vacuum Full Body Massage",            duration: 70,  price: 70  },
+      { name: "Vacuum Massage (1 Zone)",             duration: 30,  price: 30  },
+      { name: "Lymphatic Drainage Face Massage",     duration: 30,  price: 30  },
+    ]
+  },
+  {
+    name: "Permanent Makeup",
+    color: "#a0547a",
+    services: [
+      { name: "Powder Brows with Correction",        duration: 120, price: 250 },
+      { name: "Powder Brows Correction (2 months)",  duration: 90,  price: 150 },
+      { name: "Eyeliner PMU",                        duration: 90,  price: 200 },
+      { name: "Baby Line PMU",                       duration: 60,  price: 150 },
+      { name: "Lip Blush",                           duration: 120, price: 250 },
+      { name: "Lip Liner",                           duration: 90,  price: 230 },
+      { name: "Watercolour Lips",                    duration: 150, price: 260 },
+    ]
+  },
+  {
+    name: "Other",
+    color: "#888888",
+    services: []
+  },
+];
+
+// Flat list for lookups
+const SERVICES = CATEGORIES.flatMap(c => c.services.map(s => ({ ...s, category: c.name })));
+
+// Get colour for a service
+function serviceColor(serviceName) {
+  const cat = CATEGORIES.find(c => c.services.some(s => s.name === serviceName));
+  return cat ? cat.color : '#c9856a';
+}
+
+// ============================================================
+// CONFIG
+// ============================================================
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwyMqyub_uwaXIopf51r6oiAUHRQ5I1m5V5u68O2lTFVI3vyb2sxLfgHEwn2lksSPvh/exec';
+const OPEN_HOUR  = 10;
+const CLOSE_HOUR = 19;
+const SLOT_MINS  = 15;
+const SLOT_HEIGHT = 36; // px per 15min slot
+const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+// ============================================================
+// STATE
+// bookings[wKey][dayStr][slotStr] = { service, client }
+// ============================================================
+let weekOffset = 0;
+let bookings   = JSON.parse(localStorage.getItem('salonBookingsV2') || '{}');
+
+// Modal state
+let pendingDay  = null;
+let pendingSlot = null;
+let pendingWKey = null;
+
+// ============================================================
+// POPULATE CATEGORY DROPDOWN
+// ============================================================
+const catSel = document.getElementById('categorySelect');
+CATEGORIES.forEach(c => {
+  const o = document.createElement('option');
+  o.value = c.name;
+  o.textContent = c.name;
+  catSel.appendChild(o);
+});
+
+function onCategoryChange() {
+  const catName  = document.getElementById('categorySelect').value;
+  const svcSel   = document.getElementById('serviceSelect');
+  const otherInput = document.getElementById('otherTreatmentInput');
+  const info     = document.getElementById('serviceInfo');
+  svcSel.innerHTML = '<option value="">— Select a treatment —</option>';
+  info.textContent = '';
+  otherInput.style.display = 'none';
+  otherInput.value = '';
+  svcSel.style.display = 'block';
+
+  if (!catName) {
+    svcSel.disabled = true;
+    return;
+  }
+
+  if (catName === 'Other') {
+    svcSel.style.display = 'none';
+    otherInput.style.display = 'block';
+    otherInput.focus();
+    return;
+  }
+
+  const cat = CATEGORIES.find(c => c.name === catName);
+  cat.services.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.name;
+    o.textContent = `${s.name} — €${s.price} (${s.duration}min)`;
+    svcSel.appendChild(o);
+  });
+  svcSel.disabled = false;
+
+  svcSel.onchange = () => {
+    const svc = cat.services.find(s => s.name === svcSel.value);
+    info.textContent = svc ? `Duration: ${svc.duration} min  ·  Price: €${svc.price}` : '';
+  };
+}
+
+// ============================================================
+// SYNC HELPERS
+// ============================================================
+function setSyncStatus(state, text) {
+  document.getElementById('syncDot').className = 'sync-dot ' + state;
+  document.getElementById('syncText').textContent = text;
+}
+
+async function loadBookingsFromSheets() {
+  setSyncStatus('syncing', 'Loading bookings...');
+  try {
+    const res  = await fetch(`${SCRIPT_URL}?action=getBookings`);
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch(parseErr) {
+      setSyncStatus('error', 'Bad response from Google Sheets');
+      render();
+      return;
+    }
+    if (data.success) {
+      const raw = data.bookings || {};
+      const normalised = {};
+      for (const wKey in raw) {
+        let normKey = wKey;
+        if (wKey.length > 10) {
+          const d = new Date(wKey);
+          if (!isNaN(d)) {
+            normKey = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+          }
+        }
+        const normDay = {};
+        for (const dayStr in raw[wKey]) {
+          normDay[dayStr] = {};
+          for (const slotStr in raw[wKey][dayStr]) {
+            const val = raw[wKey][dayStr][slotStr];
+            if (typeof val === 'string') {
+              normDay[dayStr][slotStr] = { service: val, client: '' };
+            } else {
+              normDay[dayStr][slotStr] = val;
+            }
+          }
+        }
+        normalised[normKey] = normDay;
+      }
+      bookings = normalised;
+      localStorage.setItem('salonBookingsV2', JSON.stringify(bookings));
+      setSyncStatus('synced', 'Synced with Google Sheets');
+      render();
+    } else {
+      setSyncStatus('error', 'Sync error');
+      render();
+    }
+  } catch(e) {
+    setSyncStatus('error', `Error: ${e.message}`);
+    render();
+  }
+}
+
+async function pushToSheets(wKey, dayStr, slotStr, bookingData) {
+  setSyncStatus('syncing', 'Saving...');
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'saveBooking',
+        weekKey: wKey,
+        dayIndex: dayStr,
+        slotIndex: slotStr,
+        serviceName: JSON.stringify(bookingData)
+      })
+    });
+    setSyncStatus('synced', 'Synced with Google Sheets');
+  } catch(e) {
+    setSyncStatus('error', 'Save failed');
+  }
+}
+
+async function deleteFromSheets(wKey, dayStr, slotStr) {
+  setSyncStatus('syncing', 'Saving...');
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'deleteBooking', weekKey: wKey, dayIndex: dayStr, slotIndex: slotStr })
+    });
+    setSyncStatus('synced', 'Synced with Google Sheets');
+  } catch(e) {
+    setSyncStatus('error', 'Delete failed');
+  }
+}
+
+// ============================================================
+// CALENDAR HELPERS
+// ============================================================
+function getMondayOfCurrentWeek() {
+  const now = new Date();
+  const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
+  const mon = new Date(now);
+  mon.setDate(now.getDate() + diff);
+  mon.setHours(0,0,0,0);
+  return mon;
+}
+
+function getWeekStart() {
+  const mon = getMondayOfCurrentWeek();
+  mon.setDate(mon.getDate() + weekOffset * 7);
+  return mon;
+}
+
+function makeWeekKey(weekStart) {
+  const y = weekStart.getFullYear();
+  const m = String(weekStart.getMonth()+1).padStart(2,'0');
+  const d = String(weekStart.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+
+function formatDate(d) { return d.getDate() + '/' + (d.getMonth()+1); }
+
+function isToday(d) {
+  const t = new Date();
+  return d.getDate()===t.getDate() && d.getMonth()===t.getMonth() && d.getFullYear()===t.getFullYear();
+}
+
+function changeWeek(dir) { weekOffset += dir; render(); }
+function goToToday()     { weekOffset = 0;   render(); }
+
+function getSlots() {
+  const slots = [];
+  let mins = OPEN_HOUR * 60;
+  while (mins < CLOSE_HOUR * 60) {
+    const h = Math.floor(mins/60), m = mins%60;
+    const label = (h>12?h-12:h) + (m===0?':00':':'+String(m).padStart(2,'0')) + (h>=12?'pm':'am');
+    slots.push({ label, mins });
+    mins += SLOT_MINS;
+  }
+  return slots;
+}
+
+
+// ============================================================
+// MODAL
+// ============================================================
+function openBookingModal(wKey, dayIdx, slotIdx, slots) {
+  pendingWKey  = wKey;
+  pendingDay   = String(dayIdx);
+  pendingSlot  = String(slotIdx);
+
+  const existing = bookings[wKey]?.[pendingDay]?.[pendingSlot];
+  document.getElementById('modalTitle').textContent = existing ? 'Edit Booking' : 'New Booking';
+
+  const slot = slots[slotIdx];
+  const date = new Date(getWeekStart());
+  date.setDate(date.getDate() + dayIdx);
+  document.getElementById('modalSlotInfo').textContent =
+    `${DAYS[dayIdx]} ${formatDate(date)} at ${slot.label}`;
+
+  document.getElementById('clientNameInput').value = existing?.client || '';
+  document.getElementById('serviceInfo').textContent = '';
+
+  // Reset dropdowns
+  const catSel = document.getElementById('categorySelect');
+  const svcSel = document.getElementById('serviceSelect');
+  const otherInput = document.getElementById('otherTreatmentInput');
+  catSel.value = '';
+  svcSel.innerHTML = '<option value="">— Select a category first —</option>';
+  svcSel.disabled = true;
+  svcSel.style.display = 'block';
+  otherInput.style.display = 'none';
+  otherInput.value = '';
+
+  // If editing, pre-select the category and service
+  if (existing?.service) {
+    const cat = CATEGORIES.find(c => c.services.some(s => s.name === existing.service));
+    if (cat) {
+      catSel.value = cat.name;
+      onCategoryChange();
+      svcSel.value = existing.service;
+      const svc = cat.services.find(s => s.name === existing.service);
+      if (svc) document.getElementById('serviceInfo').textContent =
+        `Duration: ${svc.duration} min  ·  Price: €${svc.price}`;
+    } else {
+      // It's an Other booking
+      catSel.value = 'Other';
+      onCategoryChange();
+      otherInput.value = existing.service;
+    }
+  }
+
+  document.getElementById('bookingModal').classList.add('open');
+  document.getElementById('clientNameInput').focus();
+}
+
+function closeModal() {
+  document.getElementById('bookingModal').classList.remove('open');
+}
+
+function saveBooking() {
+  const client  = document.getElementById('clientNameInput').value.trim();
+  const catName = document.getElementById('categorySelect').value;
+  const otherInput = document.getElementById('otherTreatmentInput');
+  let service;
+
+  if (catName === 'Other') {
+    service = otherInput.value.trim();
+    if (!service) { alert('Please describe the treatment.'); return; }
+  } else {
+    service = document.getElementById('serviceSelect').value;
+    if (!service) { alert('Please select a treatment.'); return; }
+  }
+
+  if (!bookings[pendingWKey]) bookings[pendingWKey] = {};
+  if (!bookings[pendingWKey][pendingDay]) bookings[pendingWKey][pendingDay] = {};
+
+  const data = { service, client };
+  bookings[pendingWKey][pendingDay][pendingSlot] = data;
+  localStorage.setItem('salonBookingsV2', JSON.stringify(bookings));
+  pushToSheets(pendingWKey, pendingDay, pendingSlot, data);
+
+  closeModal();
+  render();
+}
+
+function deleteBooking(wKey, dayStr, slotStr) {
+  if (!bookings[wKey]?.[dayStr]) return;
+  delete bookings[wKey][dayStr][slotStr];
+  localStorage.setItem('salonBookingsV2', JSON.stringify(bookings));
+  deleteFromSheets(wKey, dayStr, slotStr);
+  render();
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render() {
+  const weekStart = getWeekStart();
+  const wKey      = makeWeekKey(weekStart);
+  const slots     = getSlots();
+  const totalSlots = slots.length;
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  document.getElementById('weekLabel').textContent = formatDate(weekStart) + ' – ' + formatDate(weekEnd);
+
+  const outer = document.getElementById('calendarOuter');
+  outer.innerHTML = '';
+
+  // ---- TIME SIDEBAR ----
+  const sidebar = document.getElementById('timeSidebar');
+  sidebar.innerHTML = '';
+  slots.forEach(slot => {
+    const tc = document.createElement('div');
+    tc.className = 'time-cell';
+    tc.textContent = slot.label;
+    sidebar.appendChild(tc);
+  });
+
+  // ---- HEADER (no corner cell) ----
+  const header = document.createElement('div');
+  header.className = 'cal-header';
+
+  for (let d = 0; d < 7; d++) {
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate() + d);
+    const cell = document.createElement('div');
+    cell.className = 'cal-header-cell' + (isToday(date) ? ' today-col' : '');
+    cell.innerHTML = `${DAYS[d]}<span class="date-num">${date.getDate()}</span>`;
+    header.appendChild(cell);
+  }
+  outer.appendChild(header);
+
+  // ---- BODY (no time column) ----
+  const body = document.createElement('div');
+  body.className = 'cal-body';
+
+  // Day columns
+  for (let d = 0; d < 7; d++) {
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate() + d);
+    const dayCol = document.createElement('div');
+    dayCol.className = 'day-col' + (isToday(date) ? ' today-col' : '');
+    dayCol.style.height = (totalSlots * SLOT_HEIGHT) + 'px';
+
+    // Grid lines / clickable slots
+    slots.forEach((slot, si) => {
+      const line = document.createElement('div');
+      line.className = 'slot-line';
+      const existing = bookings[wKey]?.[String(d)]?.[String(si)];
+      if (!existing) {
+        line.onclick = () => openBookingModal(wKey, d, si, slots);
+      }
+      dayCol.appendChild(line);
+    });
+
+    // Booking blocks
+    const dayBookings = bookings[wKey]?.[String(d)] || {};
+    // Track which slots are covered to avoid double rendering
+    const covered = new Set();
+
+    slots.forEach((slot, si) => {
+      if (covered.has(si)) return;
+      const b = dayBookings[String(si)];
+      if (!b) return;
+
+      const svc = SERVICES.find(s => s.name === b.service);
+      const durationSlots = svc ? Math.ceil(svc.duration / SLOT_MINS) : 1;
+      const blockHeight   = durationSlots * SLOT_HEIGHT - 4;
+      const topOffset     = si * SLOT_HEIGHT + 2;
+      const color         = serviceColor(b.service);
+
+      const block = document.createElement('div');
+      block.className = 'booking-block';
+      block.style.top    = topOffset + 'px';
+      block.style.height = blockHeight + 'px';
+      block.style.borderLeftColor = color;
+      block.style.background = `linear-gradient(135deg, ${color}18, ${color}08)`;
+
+      block.innerHTML = `
+        <div class="client-name">${b.client || '—'}</div>
+        <div class="service-name" style="color:${color}">${b.service}</div>
+        ${durationSlots > 1 ? `<div class="duration-label">${svc.duration}min</div>` : ''}
+        <button class="block-clear" title="Delete booking">✕</button>
+      `;
+
+      block.querySelector('.block-clear').addEventListener('click', e => {
+        e.stopPropagation();
+        if (confirm(`Delete ${b.client || b.service}'s booking?`)) {
+          deleteBooking(wKey, String(d), String(si));
+        }
+      });
+
+      block.addEventListener('click', e => {
+        if (e.target.classList.contains('block-clear')) return;
+        openBookingModal(wKey, d, si, slots);
+      });
+
+      dayCol.appendChild(block);
+
+      for (let k = si; k < si + durationSlots; k++) covered.add(k);
+    });
+
+    body.appendChild(dayCol);
+  }
+
+  outer.appendChild(body);
+  renderLegend();
+}
+
+function renderLegend() {
+  const leg = document.getElementById('legend');
+  leg.innerHTML = '';
+  CATEGORIES.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<span class="legend-dot" style="background:${c.color}"></span>${c.name}`;
+    leg.appendChild(item);
+  });
+}
+
+// ============================================================
+// TEST CONNECTION
+// ============================================================
+async function testConnection() {
+  const box = document.getElementById('debugBox');
+  box.style.display = 'block';
+  box.style.color = '#7dba84';
+  box.textContent = '> Testing...\n';
+  try {
+    const res = await fetch(`${SCRIPT_URL}?action=getBookings`);
+    box.textContent += `> HTTP Status: ${res.status}\n`;
+    const text = await res.text();
+    const data = JSON.parse(text);
+    const raw = data.bookings || {};
+    const keys = Object.keys(raw);
+    box.textContent += `> Keys in sheet: ${JSON.stringify(keys)}\n`;
+    // Show normalised keys
+    const normKeys = keys.map(k => {
+      if (k.length > 10) { const d = new Date(k); if (!isNaN(d)) return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`; } return k;
+    });
+    box.textContent += `> Normalised keys: ${JSON.stringify(normKeys)}\n`;
+    const ws = getWeekStart();
+    const expectedKey = `${ws.getFullYear()}-${String(ws.getMonth()+1).padStart(2,'0')}-${String(ws.getDate()).padStart(2,'0')}`;
+    box.textContent += `> Calendar expects: "${expectedKey}"\n`;
+    box.textContent += `> Match: ${normKeys.includes(expectedKey) ? '✅ YES' : '❌ NO'}`;
+  } catch(e) {
+    box.style.color = '#e07070';
+    box.textContent += `> ❌ Error: ${e.message}`;
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+localStorage.removeItem('salonBookingsV2');
+localStorage.removeItem('salonBookings');
+loadBookingsFromSheets();
+</script>
+</body>
+</html>
