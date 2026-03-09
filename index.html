@@ -32,9 +32,6 @@
     color: var(--cream);
     padding: 18px 20px;
     text-align: center;
-    position: sticky;
-    top: 0;
-    z-index: 100;
     box-shadow: 0 2px 12px var(--shadow);
   }
 
@@ -91,6 +88,9 @@
     padding: 14px 20px;
     background: var(--warm-white);
     border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 90;
   }
 
   .week-nav button {
@@ -108,6 +108,27 @@
   }
 
   .week-nav button:hover { background: var(--rose); }
+
+  .week-nav .holiday-btn {
+    background: transparent;
+    color: var(--mid);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    width: auto;
+    height: 34px;
+    padding: 0 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .week-nav .holiday-btn:hover {
+    background: var(--border);
+    color: var(--deep);
+  }
 
   .week-label {
     font-family: 'Josefin Sans', sans-serif;
@@ -162,8 +183,9 @@
 
   .calendar-wrapper {
     display: flex;
-    padding: 0 0 24px;
     overflow: hidden;
+    height: calc(100vh - 160px);
+    min-height: 400px;
   }
 
   .time-sidebar {
@@ -172,8 +194,11 @@
     background: var(--cream);
     border-right: 1px solid var(--border);
     z-index: 10;
-    padding-top: 0;
+    overflow-y: scroll;
+    scrollbar-width: none;
   }
+
+  .time-sidebar::-webkit-scrollbar { display: none; }
 
   .time-sidebar-header {
     height: 53px;
@@ -183,6 +208,7 @@
 
   .days-scroll {
     overflow-x: auto;
+    overflow-y: auto;
     flex: 1;
     -webkit-overflow-scrolling: touch;
   }
@@ -194,12 +220,12 @@
     margin: 0 auto;
     border: 1px solid var(--border);
     border-radius: 12px;
-    overflow: hidden;
     background: white;
     box-shadow: 0 4px 24px var(--shadow);
+    min-width: 490px;
   }
 
-  /* Header row */
+  /* Header row - sticks to top of days-scroll container */
   .cal-header {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -440,6 +466,150 @@
 
   .btn-cancel:hover { background: #d5c0b5; }
 
+  /* Lunch block */
+  .lunch-block {
+    position: absolute;
+    left: 0; right: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      rgba(44,31,26,0.04),
+      rgba(44,31,26,0.04) 4px,
+      transparent 4px,
+      transparent 10px
+    );
+    border-top: 2px solid var(--border);
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    color: var(--light);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Day blocked overlay */
+  .day-blocked-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(44,31,26,0.06);
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .day-blocked-overlay .blocked-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--mid);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .day-blocked-overlay .blocked-reason {
+    font-size: 0.68rem;
+    color: var(--light);
+  }
+
+  .day-blocked-overlay .unblock-btn {
+    margin-top: 4px;
+    background: var(--deep);
+    color: var(--cream);
+    border: none;
+    border-radius: 12px;
+    padding: 3px 10px;
+    font-size: 0.65rem;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* Blocked day header */
+  .cal-header-cell.blocked-col {
+    background: #4a3a35;
+    cursor: pointer;
+    opacity: 0.7;
+  }
+
+  .cal-header-cell:not(.blocked-col) {
+    cursor: pointer;
+  }
+
+  .cal-header-cell:hover {
+    opacity: 0.85;
+  }
+
+  /* Holiday modal */
+  .holiday-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(44,31,26,0.55);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .holiday-modal-overlay.open { display: flex; }
+
+  .holiday-modal {
+    background: var(--warm-white);
+    border-radius: 16px;
+    padding: 28px 24px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  }
+
+  .holiday-modal h2 {
+    font-family: 'Josefin Sans', sans-serif;
+    font-weight: 200;
+    letter-spacing: 0.15em;
+    font-size: 1.1rem;
+    color: var(--deep);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  .holiday-modal p {
+    font-size: 0.78rem;
+    color: var(--light);
+    margin-bottom: 18px;
+  }
+
+  .holiday-modal label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--mid);
+    margin-bottom: 5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .holiday-modal input[type="date"],
+  .holiday-modal input[type="text"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    color: var(--deep);
+    background: white;
+    margin-bottom: 14px;
+    outline: none;
+    transition: border 0.2s;
+  }
+
+  .holiday-modal input:focus { border-color: var(--rose); }
+
   @media (max-width: 600px) {
     header h1 { font-size: 1.2rem; }
     .week-label { font-size: 0.85rem; min-width: 140px; }
@@ -474,6 +644,24 @@
   </div>
 </div>
 
+<!-- Holiday / Block Day Modal -->
+<div class="holiday-modal-overlay" id="holidayModal">
+  <div class="holiday-modal">
+    <h2>Block Off Days</h2>
+    <p>Block a date range for holidays or sick days. Click a day header on the calendar to block a single day.</p>
+    <label>From</label>
+    <input type="date" id="holidayFrom" />
+    <label>To</label>
+    <input type="date" id="holidayTo" />
+    <label>Reason (optional)</label>
+    <input type="text" id="holidayReason" placeholder="e.g. Holiday, Sick day..." autocomplete="off" />
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeHolidayModal()">Cancel</button>
+      <button class="btn-save" onclick="saveHolidays()">Block Days</button>
+    </div>
+  </div>
+</div>
+
 <header>
   <h1>CARAUN</h1>
   <p>Appointment Calendar</p>
@@ -489,6 +677,7 @@
   <span class="week-label" id="weekLabel"></span>
   <button onclick="changeWeek(1)">&#8594;</button>
   <button class="today-btn" onclick="goToToday()">Today</button>
+  <button class="holiday-btn" onclick="openHolidayModal()">Block Days</button>
 </div>
 
 <div style="max-width:1116px;margin:0 auto;">
@@ -510,13 +699,6 @@
 // SERVICES — categorised
 // ============================================================
 const CATEGORIES = [
-    {
-    name: "Dermalogica Skin Event",
-    color: "#FFFFFF",
-    services: [
-      { name: "Dermalogica Skin Analysis",                       duration: 20,  price: 0  },
-    ]
-  },
   {
     name: "Eyebrows",
     color: "#b5834a",
@@ -656,19 +838,25 @@ function serviceColor(serviceName) {
 // ============================================================
 // CONFIG
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwyMqyub_uwaXIopf51r6oiAUHRQ5I1m5V5u68O2lTFVI3vyb2sxLfgHEwn2lksSPvh/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz9NpzmwMPysoHo4JGC-gOC7w7KOFUwpe3Sus1dV5aNQXxKhFy2Yu3uyntbJ1qvjorf/exec';
 const OPEN_HOUR  = 10;
 const CLOSE_HOUR = 19;
 const SLOT_MINS  = 15;
-const SLOT_HEIGHT = 36; // px per 15min slot
+const SLOT_HEIGHT = 36;
 const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+// Lunch break config (13:30 - 14:30)
+const LUNCH_START_MINS = 13 * 60 + 30;
+const LUNCH_END_MINS   = 14 * 60 + 30;
 
 // ============================================================
 // STATE
 // bookings[wKey][dayStr][slotStr] = { service, client }
+// blockedDays = { 'YYYY-MM-DD': 'reason' }
 // ============================================================
-let weekOffset = 0;
-let bookings   = JSON.parse(localStorage.getItem('salonBookingsV2') || '{}');
+let weekOffset  = 0;
+let bookings    = JSON.parse(localStorage.getItem('salonBookingsV2') || '{}');
+let blockedDays = JSON.parse(localStorage.getItem('salonBlockedDays') || '{}');
 
 // Modal state
 let pendingDay  = null;
@@ -738,12 +926,9 @@ async function loadBookingsFromSheets() {
     const res  = await fetch(`${SCRIPT_URL}?action=getBookings`);
     const text = await res.text();
     let data;
-    try {
-      data = JSON.parse(text);
-    } catch(parseErr) {
+    try { data = JSON.parse(text); } catch(e) {
       setSyncStatus('error', 'Bad response from Google Sheets');
-      render();
-      return;
+      render(); return;
     }
     if (data.success) {
       const raw = data.bookings || {};
@@ -752,30 +937,31 @@ async function loadBookingsFromSheets() {
         let normKey = wKey;
         if (wKey.length > 10) {
           const d = new Date(wKey);
-          if (!isNaN(d)) {
-            normKey = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
-          }
+          if (!isNaN(d)) normKey = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
         }
         const normDay = {};
         for (const dayStr in raw[wKey]) {
           normDay[dayStr] = {};
           for (const slotStr in raw[wKey][dayStr]) {
             const val = raw[wKey][dayStr][slotStr];
-            if (typeof val === 'string') {
-              normDay[dayStr][slotStr] = { service: val, client: '' };
-            } else {
-              normDay[dayStr][slotStr] = val;
-            }
+            normDay[dayStr][slotStr] = typeof val === 'string' ? { service: val, client: '' } : val;
           }
         }
         normalised[normKey] = normDay;
       }
       bookings = normalised;
       localStorage.setItem('salonBookingsV2', JSON.stringify(bookings));
+
+      // Load blocked days if present
+      if (data.blockedDays) {
+        blockedDays = data.blockedDays;
+        localStorage.setItem('salonBlockedDays', JSON.stringify(blockedDays));
+      }
+
       setSyncStatus('synced', 'Synced with Google Sheets');
       render();
     } else {
-      setSyncStatus('error', 'Sync error');
+      setSyncStatus('error', `Error: syncing`);
       render();
     }
   } catch(e) {
@@ -956,6 +1142,74 @@ function deleteBooking(wKey, dayStr, slotStr) {
 }
 
 // ============================================================
+// BLOCKED DAYS & HOLIDAYS
+// ============================================================
+function openHolidayModal() {
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('holidayFrom').value = today;
+  document.getElementById('holidayTo').value   = today;
+  document.getElementById('holidayReason').value = '';
+  document.getElementById('holidayModal').classList.add('open');
+}
+
+function closeHolidayModal() {
+  document.getElementById('holidayModal').classList.remove('open');
+}
+
+function saveHolidays() {
+  const from   = document.getElementById('holidayFrom').value;
+  const to     = document.getElementById('holidayTo').value;
+  const reason = document.getElementById('holidayReason').value.trim() || 'Unavailable';
+  if (!from || !to) { alert('Please select a date range.'); return; }
+  const start = new Date(from), end = new Date(to);
+  if (start > end) { alert('Start date must be before end date.'); return; }
+  const cur = new Date(start);
+  while (cur <= end) {
+    const key = cur.toISOString().slice(0,10);
+    blockedDays[key] = reason;
+    cur.setDate(cur.getDate() + 1);
+  }
+  localStorage.setItem('salonBlockedDays', JSON.stringify(blockedDays));
+  saveBlockedDaysToSheets();
+  closeHolidayModal();
+  render();
+}
+
+function toggleDayBlock(dateKey) {
+  if (blockedDays[dateKey]) {
+    if (confirm(`Unblock ${dateKey}?`)) {
+      delete blockedDays[dateKey];
+      localStorage.setItem('salonBlockedDays', JSON.stringify(blockedDays));
+      saveBlockedDaysToSheets();
+      render();
+    }
+  } else {
+    const reason = prompt('Reason (optional):', 'Unavailable') ?? '';
+    if (reason === null) return;
+    blockedDays[dateKey] = reason || 'Unavailable';
+    localStorage.setItem('salonBlockedDays', JSON.stringify(blockedDays));
+    saveBlockedDaysToSheets();
+    render();
+  }
+}
+
+async function saveBlockedDaysToSheets() {
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveBlockedDays', blockedDays })
+    });
+  } catch(e) { console.log('Blocked days sync error', e); }
+}
+
+// ============================================================
+// BLOCKED DAYS — load from sheets response
+// ============================================================
+function isLunchSlot(slotMins) {
+  return slotMins >= LUNCH_START_MINS && slotMins < LUNCH_END_MINS;
+}
+
+// ============================================================
 // RENDER
 // ============================================================
 function render() {
@@ -981,16 +1235,20 @@ function render() {
     sidebar.appendChild(tc);
   });
 
-  // ---- HEADER (no corner cell) ----
+  // ---- HEADER (clickable to block day) ----
   const header = document.createElement('div');
   header.className = 'cal-header';
 
   for (let d = 0; d < 7; d++) {
     const date = new Date(weekStart);
     date.setDate(weekStart.getDate() + d);
+    const dateKey = date.toISOString().slice(0,10);
+    const isBlocked = !!blockedDays[dateKey];
     const cell = document.createElement('div');
-    cell.className = 'cal-header-cell' + (isToday(date) ? ' today-col' : '');
+    cell.className = 'cal-header-cell' + (isToday(date) ? ' today-col' : '') + (isBlocked ? ' blocked-col' : '');
     cell.innerHTML = `${DAYS[d]}<span class="date-num">${date.getDate()}</span>`;
+    cell.title = isBlocked ? `Blocked: ${blockedDays[dateKey]} — click to unblock` : 'Click to block this day';
+    cell.onclick = () => toggleDayBlock(dateKey);
     header.appendChild(cell);
   }
   outer.appendChild(header);
@@ -1003,6 +1261,9 @@ function render() {
   for (let d = 0; d < 7; d++) {
     const date = new Date(weekStart);
     date.setDate(weekStart.getDate() + d);
+    const dateKey = date.toISOString().slice(0,10);
+    const isBlocked = !!blockedDays[dateKey];
+
     const dayCol = document.createElement('div');
     dayCol.className = 'day-col' + (isToday(date) ? ' today-col' : '');
     dayCol.style.height = (totalSlots * SLOT_HEIGHT) + 'px';
@@ -1011,59 +1272,81 @@ function render() {
     slots.forEach((slot, si) => {
       const line = document.createElement('div');
       line.className = 'slot-line';
+      const isLunch = isLunchSlot(slot.mins);
       const existing = bookings[wKey]?.[String(d)]?.[String(si)];
-      if (!existing) {
+      if (!existing && !isLunch && !isBlocked) {
         line.onclick = () => openBookingModal(wKey, d, si, slots);
       }
       dayCol.appendChild(line);
     });
 
-    // Booking blocks
-    const dayBookings = bookings[wKey]?.[String(d)] || {};
-    // Track which slots are covered to avoid double rendering
-    const covered = new Set();
+    // Lunch block
+    const lunchStartSlot = (LUNCH_START_MINS - OPEN_HOUR * 60) / SLOT_MINS;
+    const lunchSlots = (LUNCH_END_MINS - LUNCH_START_MINS) / SLOT_MINS;
+    const lunchBlock = document.createElement('div');
+    lunchBlock.className = 'lunch-block';
+    lunchBlock.style.top    = (lunchStartSlot * SLOT_HEIGHT) + 'px';
+    lunchBlock.style.height = (lunchSlots * SLOT_HEIGHT) + 'px';
+    lunchBlock.textContent = 'Lunch';
+    dayCol.appendChild(lunchBlock);
 
-    slots.forEach((slot, si) => {
-      if (covered.has(si)) return;
-      const b = dayBookings[String(si)];
-      if (!b) return;
-
-      const svc = SERVICES.find(s => s.name === b.service);
-      const durationSlots = svc ? Math.ceil(svc.duration / SLOT_MINS) : 1;
-      const blockHeight   = durationSlots * SLOT_HEIGHT - 4;
-      const topOffset     = si * SLOT_HEIGHT + 2;
-      const color         = serviceColor(b.service);
-
-      const block = document.createElement('div');
-      block.className = 'booking-block';
-      block.style.top    = topOffset + 'px';
-      block.style.height = blockHeight + 'px';
-      block.style.borderLeftColor = color;
-      block.style.background = `linear-gradient(135deg, ${color}18, ${color}08)`;
-
-      block.innerHTML = `
-        <div class="client-name">${b.client || '—'}</div>
-        <div class="service-name" style="color:${color}">${b.service}</div>
-        ${durationSlots > 1 ? `<div class="duration-label">${svc.duration}min</div>` : ''}
-        <button class="block-clear" title="Delete booking">✕</button>
+    // Blocked day overlay
+    if (isBlocked) {
+      const overlay = document.createElement('div');
+      overlay.className = 'day-blocked-overlay';
+      overlay.innerHTML = `
+        <div class="blocked-label">🚫 Closed</div>
+        <div class="blocked-reason">${blockedDays[dateKey]}</div>
+        <button class="unblock-btn" onclick="toggleDayBlock('${dateKey}')">Unblock</button>
       `;
+      dayCol.appendChild(overlay);
+    } else {
+      // Booking blocks (only if not blocked)
+      const dayBookings = bookings[wKey]?.[String(d)] || {};
+      const covered = new Set();
 
-      block.querySelector('.block-clear').addEventListener('click', e => {
-        e.stopPropagation();
-        if (confirm(`Delete ${b.client || b.service}'s booking?`)) {
-          deleteBooking(wKey, String(d), String(si));
-        }
+      slots.forEach((slot, si) => {
+        if (covered.has(si)) return;
+        if (isLunchSlot(slot.mins)) return;
+        const b = dayBookings[String(si)];
+        if (!b) return;
+
+        const svc = SERVICES.find(s => s.name === b.service);
+        const durationSlots = svc ? Math.ceil(svc.duration / SLOT_MINS) : 1;
+        const blockHeight   = durationSlots * SLOT_HEIGHT - 4;
+        const topOffset     = si * SLOT_HEIGHT + 2;
+        const color         = serviceColor(b.service);
+
+        const block = document.createElement('div');
+        block.className = 'booking-block';
+        block.style.top    = topOffset + 'px';
+        block.style.height = blockHeight + 'px';
+        block.style.borderLeftColor = color;
+        block.style.background = `linear-gradient(135deg, ${color}18, ${color}08)`;
+
+        block.innerHTML = `
+          <div class="client-name">${b.client || '—'}</div>
+          <div class="service-name" style="color:${color}">${b.service}</div>
+          ${durationSlots > 1 ? `<div class="duration-label">${svc ? svc.duration : ''}min</div>` : ''}
+          <button class="block-clear" title="Delete booking">✕</button>
+        `;
+
+        block.querySelector('.block-clear').addEventListener('click', e => {
+          e.stopPropagation();
+          if (confirm(`Delete ${b.client || b.service}'s booking?`)) {
+            deleteBooking(wKey, String(d), String(si));
+          }
+        });
+
+        block.addEventListener('click', e => {
+          if (e.target.classList.contains('block-clear')) return;
+          openBookingModal(wKey, d, si, slots);
+        });
+
+        dayCol.appendChild(block);
+        for (let k = si; k < si + durationSlots; k++) covered.add(k);
       });
-
-      block.addEventListener('click', e => {
-        if (e.target.classList.contains('block-clear')) return;
-        openBookingModal(wKey, d, si, slots);
-      });
-
-      dayCol.appendChild(block);
-
-      for (let k = si; k < si + durationSlots; k++) covered.add(k);
-    });
+    }
 
     body.appendChild(dayCol);
   }
@@ -1113,6 +1396,20 @@ async function testConnection() {
     box.textContent += `> ❌ Error: ${e.message}`;
   }
 }
+
+// ============================================================
+// SYNC TIME SIDEBAR SCROLL WITH DAYS SCROLL
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  const daysScroll  = document.querySelector('.days-scroll');
+  const timeSidebar = document.querySelector('.time-sidebar');
+  if (daysScroll && timeSidebar) {
+    daysScroll.addEventListener('scroll', () => {
+      // Offset by 53px (header height) so time labels align with body rows
+      timeSidebar.scrollTop = daysScroll.scrollTop;
+    });
+  }
+});
 
 // ============================================================
 // INIT
