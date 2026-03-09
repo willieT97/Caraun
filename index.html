@@ -636,6 +636,21 @@
       <option value="">— Select a category first —</option>
     </select>
     <input type="text" id="otherTreatmentInput" placeholder="Describe the treatment..." autocomplete="off" style="display:none;" />
+    <div id="otherDurationRow" style="display:none;">
+      <label>Duration</label>
+      <select id="otherDurationSelect">
+        <option value="15">15 min</option>
+        <option value="30">30 min</option>
+        <option value="45">45 min</option>
+        <option value="60" selected>60 min</option>
+        <option value="75">75 min</option>
+        <option value="90">90 min</option>
+        <option value="105">105 min</option>
+        <option value="120">120 min</option>
+        <option value="150">150 min</option>
+        <option value="180">180 min</option>
+      </select>
+    </div>
     <div id="serviceInfo" style="font-size:0.75rem;color:var(--light);margin:-8px 0 12px;min-height:18px;"></div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
@@ -699,14 +714,6 @@
 // SERVICES — categorised
 // ============================================================
 const CATEGORIES = [
-  {
-    name: "Dermalogica Skin Event",
-    color: "#ffffff",
-    services: [
-    
-      { name: "Dermalogica Skin Analysis",    duration: 20,  price: 0  },
-    ]
-  },
   {
     name: "Eyebrows",
     color: "#b5834a",
@@ -892,6 +899,7 @@ function onCategoryChange() {
   otherInput.style.display = 'none';
   otherInput.value = '';
   svcSel.style.display = 'block';
+  document.getElementById('otherDurationRow').style.display = 'none';
 
   if (!catName) {
     svcSel.disabled = true;
@@ -901,6 +909,8 @@ function onCategoryChange() {
   if (catName === 'Other') {
     svcSel.style.display = 'none';
     otherInput.style.display = 'block';
+    document.getElementById('otherDurationRow').style.display = 'block';
+    document.getElementById('otherDurationSelect').value = '60';
     otherInput.focus();
     return;
   }
@@ -1104,6 +1114,9 @@ function openBookingModal(wKey, dayIdx, slotIdx, slots) {
       catSel.value = 'Other';
       onCategoryChange();
       otherInput.value = existing.service;
+      if (existing.duration) {
+        document.getElementById('otherDurationSelect').value = String(existing.duration);
+      }
     }
   }
 
@@ -1124,10 +1137,19 @@ function saveBooking() {
   if (catName === 'Other') {
     service = otherInput.value.trim();
     if (!service) { alert('Please describe the treatment.'); return; }
-  } else {
+    const duration = parseInt(document.getElementById('otherDurationSelect').value);
+    const data = { service, client, duration };
+    if (!bookings[pendingWKey]) bookings[pendingWKey] = {};
+    if (!bookings[pendingWKey][pendingDay]) bookings[pendingWKey][pendingDay] = {};
+    bookings[pendingWKey][pendingDay][pendingSlot] = data;
+    localStorage.setItem('salonBookingsV2', JSON.stringify(bookings));
+    pushToSheets(pendingWKey, pendingDay, pendingSlot, data);
+    closeModal();
+    render();
+    return;
+  }
     service = document.getElementById('serviceSelect').value;
     if (!service) { alert('Please select a treatment.'); return; }
-  }
 
   if (!bookings[pendingWKey]) bookings[pendingWKey] = {};
   if (!bookings[pendingWKey][pendingDay]) bookings[pendingWKey][pendingDay] = {};
@@ -1320,7 +1342,8 @@ function render() {
         if (!b) return;
 
         const svc = SERVICES.find(s => s.name === b.service);
-        const durationSlots = svc ? Math.ceil(svc.duration / SLOT_MINS) : 1;
+        const durationMins  = svc ? svc.duration : (b.duration || 15);
+        const durationSlots = Math.ceil(durationMins / SLOT_MINS);
         const blockHeight   = durationSlots * SLOT_HEIGHT - 4;
         const topOffset     = si * SLOT_HEIGHT + 2;
         const color         = serviceColor(b.service);
@@ -1335,7 +1358,7 @@ function render() {
         block.innerHTML = `
           <div class="client-name">${b.client || '—'}</div>
           <div class="service-name" style="color:${color}">${b.service}</div>
-          ${durationSlots > 1 ? `<div class="duration-label">${svc ? svc.duration : ''}min</div>` : ''}
+          ${durationSlots > 1 ? `<div class="duration-label">${durationMins}min</div>` : ''}
           <button class="block-clear" title="Delete booking">✕</button>
         `;
 
