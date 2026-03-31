@@ -860,7 +860,7 @@ function serviceColor(serviceName) {
 // ============================================================
 // CONFIG
 // ============================================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz9NpzmwMPysoHo4JGC-gOC7w7KOFUwpe3Sus1dV5aNQXxKhFy2Yu3uyntbJ1qvjorf/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzweEDPlKVoTHSZ2RbWAW7BP20SMFeeAJxvIAz-hgfwZuFfNxrLklKXZFIdQafQRDWt/exec';
 const OPEN_HOUR  = 10;
 const CLOSE_HOUR = 19;
 const SLOT_MINS  = 15;
@@ -960,9 +960,16 @@ async function loadBookingsFromSheets() {
       const normalised = {};
       for (const wKey in raw) {
         let normKey = wKey;
+        // Normalise long date strings
         if (wKey.length > 10) {
           const d = new Date(wKey);
           if (!isNaN(d)) normKey = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+        }
+        // Snap to Monday — if key falls on a Sunday (day 0), advance by 1
+        const keyDate = new Date(normKey + 'T12:00:00');
+        if (keyDate.getDay() === 0) {
+          keyDate.setDate(keyDate.getDate() + 1);
+          normKey = `${keyDate.getFullYear()}-${String(keyDate.getMonth()+1).padStart(2,'0')}-${String(keyDate.getDate()).padStart(2,'0')}`;
         }
         const normDay = {};
         for (const dayStr in raw[wKey]) {
@@ -1032,7 +1039,9 @@ async function deleteFromSheets(wKey, dayStr, slotStr) {
 // ============================================================
 function getMondayOfCurrentWeek() {
   const now = new Date();
-  const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
+  // Use local date parts to avoid timezone shifting the date
+  const day = now.getDay(); // 0=Sun, 1=Mon...
+  const diff = day === 0 ? -6 : 1 - day;
   const mon = new Date(now);
   mon.setDate(now.getDate() + diff);
   mon.setHours(0,0,0,0);
@@ -1046,6 +1055,7 @@ function getWeekStart() {
 }
 
 function makeWeekKey(weekStart) {
+  // Use local date parts to avoid UTC conversion shifting the date
   const y = weekStart.getFullYear();
   const m = String(weekStart.getMonth()+1).padStart(2,'0');
   const d = String(weekStart.getDate()).padStart(2,'0');
